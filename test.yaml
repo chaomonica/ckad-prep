@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: my-job
+  labels:
+    color: green
+    size: large
+spec:
+  completions: 5
+  parallelism: 2
+  template:
+    spec:
+      securityContext:
+        runAsUser: 0
+      containers:
+      - name: busybox
+        image: busybox
+        command: ["sleep 6000"]
+        securityContext:
+          runAsUser: 2000
+          capabilities:
+            add: ["SYS_TIME"]
+        env:
+        - name: LANGUAGE
+          value: "English"
+        - name: SECRET-USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysecret
+              key: username
+        volumeMounts:
+        - name: vol-hostpath
+          mountPath: /logs
+        - name: vol-pv
+          mountPath: /db
+        - name: vol-secret
+          mountPath: /secrets
+      volumes:
+      - name: vol-hostpath
+        hostPath:
+          # directory location on host
+          path: /data
+      - name: vol-pv
+        persistentVolumeClaim:
+          claimName: my-pvc
+      - name: vol-secret
+        secret:
+          secretName: mysecret
+      restartPolicy: Never
+  backoffLimit: 4
